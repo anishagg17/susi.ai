@@ -30,6 +30,7 @@ import { Paper as _Paper } from '../../shared/Container';
 import MoreVertIcon from '@material-ui/icons/MoreVert';
 import Delete from '@material-ui/icons/Delete';
 import EditBtn from '@material-ui/icons/BorderColor';
+import CircularProgress from '@material-ui/core/CircularProgress';
 
 const Paper = styled(_Paper)`
   width: 100%;
@@ -45,6 +46,7 @@ class SkillFeedbackCard extends Component {
     errorText: '',
     anchorEl: null,
     newFeedbackValue: '',
+    loading: false,
   };
 
   handleMenuOpen = event => {
@@ -63,15 +65,17 @@ class SkillFeedbackCard extends Component {
     this.setState({ newFeedbackValue: event.target.value });
   };
 
-  handleEditOpen = () => {
+  handleEditOpen = previousFeedback => {
     this.handleMenuClose();
-    this.props.actions.openModal({
-      modalType: 'editFeedback',
-      handleConfirm: this.postFeedback,
-      handleClose: this.props.actions.closeModal,
-      errorText: this.state.errorText,
-      feedback: this.state.newFeedbackValue,
-      handleEditFeedback: this.editFeedback,
+    this.setState({ newFeedbackValue: previousFeedback }, () => {
+      this.props.actions.openModal({
+        modalType: 'editFeedback',
+        handleConfirm: this.postFeedback,
+        handleClose: this.props.actions.closeModal,
+        errorText: this.state.errorText,
+        feedback: this.state.newFeedbackValue,
+        handleEditFeedback: this.editFeedback,
+      });
     });
   };
 
@@ -82,7 +86,8 @@ class SkillFeedbackCard extends Component {
 
   postFeedback = async () => {
     const { group, language, skillTag: skill, actions } = this.props;
-    const { newFeedbackValue } = this.state;
+    const { newFeedbackValue, loading } = this.state;
+
     const skillData = {
       model: 'general',
       group,
@@ -90,7 +95,11 @@ class SkillFeedbackCard extends Component {
       skill,
       feedback: newFeedbackValue,
     };
+
     if (newFeedbackValue !== undefined && newFeedbackValue.trim()) {
+      if (!loading) {
+        this.setState({ loading: true });
+      }
       try {
         await actions.setSkillFeedback(skillData);
         actions.closeModal();
@@ -98,6 +107,7 @@ class SkillFeedbackCard extends Component {
       } catch (error) {
         console.log(error);
       }
+      this.setState({ loading: false });
     } else {
       this.setState({ errorText: 'Feedback cannot be empty' });
     }
@@ -115,6 +125,7 @@ class SkillFeedbackCard extends Component {
 
   deleteFeedback = async () => {
     const { group, language, skillTag: skill, actions } = this.props;
+    this.setState({ newFeedbackValue: '' });
     const skillData = {
       model: 'general',
       group,
@@ -138,7 +149,7 @@ class SkillFeedbackCard extends Component {
       email,
       accessToken,
     } = this.props;
-    const { errorText, anchorEl, newFeedbackValue } = this.state;
+    const { errorText, anchorEl, newFeedbackValue, loading } = this.state;
     const open = Boolean(anchorEl);
 
     let userName = '';
@@ -182,7 +193,11 @@ class SkillFeedbackCard extends Component {
                     open={open}
                     onClose={this.handleMenuClose}
                   >
-                    <MenuItem onClick={this.handleEditOpen}>
+                    <MenuItem
+                      onClick={() => {
+                        this.handleEditOpen(data.feedback);
+                      }}
+                    >
                       <ListItemIcon>
                         <EditBtn />
                       </ListItemIcon>
@@ -263,8 +278,13 @@ class SkillFeedbackCard extends Component {
                   variant="contained"
                   style={{ marginTop: 10 }}
                   onClick={this.postFeedback}
+                  disabled={loading}
                 >
-                  Post
+                  {loading ? (
+                    <CircularProgress size={24} color="white" />
+                  ) : (
+                    'Post'
+                  )}
                 </Button>
               </div>
             </div>
