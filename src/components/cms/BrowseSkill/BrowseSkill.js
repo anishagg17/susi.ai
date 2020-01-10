@@ -47,7 +47,22 @@ import pluralize from 'pluralize';
 import SkillSlideshow from '../SkillSlideshow';
 import { SelectedText } from '../SkillsStyle';
 import appendQueryString from '../../../utils/appendQueryString';
-import ScrollTopButton from '../../shared/ScrollTopButton';
+import posed from 'react-pose';
+
+const MobileContainer = styled.div`
+  position: absolute;
+  top: '20px';
+  z-index: 100;
+  left: -65%;
+`;
+const SideDrawer = posed.div({
+  hoverable: true,
+  draggable: 'x',
+  dragBounds: { left: '0%', right: '85%' },
+  init: { scale: 1 },
+  hover: { scale: 1 },
+  drag: { scale: 1 },
+});
 
 const Container = styled.div`
   display: flex;
@@ -173,9 +188,11 @@ const MobileMenuContainer = styled.div`
     border-top: 1px #e7e7e7 solid;
     border-right: 1px #e7e7e7 solid;
     border-left: 1px #e7e7e7 solid;
+    border-bottom: 1px #e7e7e7 solid;
+    background-color: #4285f4;
+    color: #fff;
   }
   & a:last-child li {
-    border-bottom: 1px #e7e7e7 solid;
     border-radius: 0 0 5px 5px;
   }
   & a:first-child li {
@@ -225,6 +242,28 @@ const commonListIconStyles = css`
   fill: ${props => (props.isActive === true ? '#4285f4' : '#e0e0e0')};
   @media (max-width: 1260px) {
     font-size: 30px;
+  }
+`;
+
+const MobileMenuRatings = styled.div`
+  margin: 0;
+  padding: 0.5rem 3rem;
+  border: 1px #e7e7e7 solid;
+  border-radius: 0 0 5px 5px;
+  background-color: #4285f4;
+  color: #fff;
+  h3 {
+    margin-left: -1.2rem;
+    font-weight: 700;
+    line-height: 0.5rem;
+    font-size: 1rem;
+    color: #fff;
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  }
+  h4 {
+    color: #fff;
+    line-height: 1.5rem;
+    font-size: 0.875rem;
   }
 `;
 
@@ -590,24 +629,56 @@ class BrowseSkill extends React.Component {
     let isMobile = isMobileView();
     let backToHome = null;
     let renderMenu = null;
-    let renderMobileMenu = null;
+    let renderMobileMenu = [];
     if (isMobile) {
       backToHome = (
         <MobileBackButton variant="contained" color="default">
           <Link to="/">Back to SUSI Skills</Link>
         </MobileBackButton>
       );
-      renderMobileMenu = groups.map(categoryName => {
+      groups.forEach(categoryName => {
         const linkValue = '/category/' + categoryName;
-        return (
+        renderMobileMenu.push(
           <Link to={linkValue} key={linkValue}>
             <MobileMenuItem key={categoryName} value={categoryName}>
               <span style={{ width: '90%' }}>{categoryName}</span>
               <ChevronRight style={{ top: -8 }} />
             </MobileMenuItem>
-          </Link>
+          </Link>,
         );
       });
+
+      const MobileView = (
+        <MobileMenuRatings>
+          <h3>Refine by</h3>
+          <h4>Avg. Customer Review</h4>
+          {ratingRefine && (
+            <h4 onClick={() => this.handleRatingRefine(null)}>{'< Clear'}</h4>
+          )}
+          <SkillRating
+            handleRatingRefine={this.handleRatingRefine}
+            rating={4}
+            ratingRefine={ratingRefine}
+          />
+          <SkillRating
+            handleRatingRefine={this.handleRatingRefine}
+            rating={3}
+            ratingRefine={ratingRefine}
+          />
+          <SkillRating
+            handleRatingRefine={this.handleRatingRefine}
+            rating={2}
+            ratingRefine={ratingRefine}
+          />
+          <SkillRating
+            handleRatingRefine={this.handleRatingRefine}
+            rating={1}
+            ratingRefine={ratingRefine}
+          />
+        </MobileMenuRatings>
+      );
+
+      renderMobileMenu.push(MobileView);
     }
     if (!isMobile) {
       renderMenu = groups.map(categoryName => {
@@ -1050,7 +1121,6 @@ class BrowseSkill extends React.Component {
                         >
                           <NavigationArrowForward />
                         </Fab>
-                        <ScrollTopButton />
                       </PageNavigationContainer>
                     )}
                   </div>
@@ -1059,16 +1129,21 @@ class BrowseSkill extends React.Component {
                 )}
                 <div>{renderCardScrollList}</div>
                 {/* Check if mobile view is currently active*/}
-                {routeType === 'category' ? (
-                  backToHome
-                ) : (
-                  <MobileMenuContainer>{renderMobileMenu}</MobileMenuContainer>
-                )}
+                {routeType === 'category'
+                  ? backToHome
+                  : isMobile && (
+                      <MobileContainer>
+                        <SideDrawer>
+                          <MobileMenuContainer>
+                            {renderMobileMenu}
+                          </MobileMenuContainer>
+                        </SideDrawer>
+                      </MobileContainer>
+                    )}
               </ContentContainer>
             </React.Fragment>
           )}
         </RightContainer>
-        <ScrollTopButton />
       </Container>
     );
   }
